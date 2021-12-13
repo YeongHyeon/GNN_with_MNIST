@@ -61,7 +61,7 @@ if __name__ == '__main__':
 
     parser.add_argument('--nn', type=int, default=0, help='')
 
-    parser.add_argument('--dir', type=str, default='../dataset_graph_mnist_short', help='')
+    parser.add_argument('--dir', type=str, default='../dataset_graph_mnist', help='')
 
     parser.add_argument('--ksize', type=int, default=3, help='')
     parser.add_argument('--lr', type=float, default=1e-3, help='')
