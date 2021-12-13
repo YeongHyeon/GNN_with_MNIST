@@ -64,11 +64,9 @@ def training(agent, dataset, batch_size, epochs):
             if(name_key == 'entropy'):
                 if(best_val[name_key] > step_dict['losses']['entropy']):
                     best_val[name_key] = step_dict['losses']['entropy']
-                    agent.save_params(model='model_%d_%s' %(idx_k+1, name_key), tflite=False)
             else:
                 if(best_val[name_key] < dict_perform[name_key]):
                     best_val[name_key] = dict_perform[name_key]
-                    agent.save_params(model='model_%d_%s' %(idx_k+1, name_key), tflite=False)
 
         agent.save_params(model='model_0_finepocch')
 

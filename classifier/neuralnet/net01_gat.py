@@ -44,7 +44,6 @@ class Agent(object):
         conc_func = self.__model.__call__.get_concrete_function(\
             tf.TensorSpec(shape=(1, self.dim_n, self.dim_f), dtype=tf.float32), \
             tf.TensorSpec(shape=(1, self.dim_n, self.dim_n), dtype=tf.float32))
-        self.__get_flops(conc_func)
 
     def __loss(self, y, y_hat):
 
@@ -69,47 +68,14 @@ class Agent(object):
 
         return {'y_hat':y_hat, 'losses':losses}
 
-    def __get_flops(self, conc_func):
+    def save_params(self, model='base'):
 
-        frozen_func, graph_def = convert_variables_to_constants_v2_as_graph(conc_func)
+        vars_to_save = self.__model.layer.parameters.copy()
+        vars_to_save["optimizer"] = self.optimizer
 
-        with tf.Graph().as_default() as graph:
-            tf.compat.v1.graph_util.import_graph_def(graph_def, name='')
-
-            run_meta = tf.compat.v1.RunMetadata()
-            opts = tf.compat.v1.profiler.ProfileOptionBuilder.float_operation()
-            flops = tf.compat.v1.profiler.profile(graph=graph, run_meta=run_meta, cmd="op", options=opts)
-
-            flop_tot = flops.total_float_ops
-            ftxt = open("flops.txt", "w")
-            for idx, name in enumerate(['', 'K', 'M', 'G', 'T']):
-                text = '%.3f [%sFLOPS]' %(flop_tot/10**(3*idx), name)
-                print(text)
-                ftxt.write("%s\n" %(text))
-            ftxt.close()
-
-    def save_params(self, model='base', tflite=False):
-
-        if(tflite):
-            # https://github.com/tensorflow/tensorflow/issues/42818
-            conc_func = self.__model.__call__.get_concrete_function(tf.TensorSpec(shape=(1, self.dim_n, self.dim_f), dtype=tf.float32))
-            converter = tf.lite.TFLiteConverter.from_concrete_functions([conc_func])
-
-            converter.optimizations = [tf.lite.Optimize.DEFAULT]
-            converter.experimental_new_converter = True
-            converter.target_spec.supported_ops = [tf.lite.OpsSet.TFLITE_BUILTINS, tf.lite.OpsSet.SELECT_TF_OPS]
-
-            tflite_model = converter.convert()
-
-            with open('model.tflite', 'wb') as f:
-                f.write(tflite_model)
-        else:
-            vars_to_save = self.__model.layer.parameters.copy()
-            vars_to_save["optimizer"] = self.optimizer
-
-            ckpt = tf.train.Checkpoint(**vars_to_save)
-            ckptman = tf.train.CheckpointManager(ckpt, directory=os.path.join(self.path_ckpt, model), max_to_keep=1)
-            ckptman.save()
+        ckpt = tf.train.Checkpoint(**vars_to_save)
+        ckptman = tf.train.CheckpointManager(ckpt, directory=os.path.join(self.path_ckpt, model), max_to_keep=1)
+        ckptman.save()
 
     def load_params(self, model):
 
@@ -151,8 +117,6 @@ class Neuralnet(tf.Module):
     @tf.function
     def __call__(self, x, a, verbose=False):
 
-        # origin deco: @tf.function
-        # @tf.autograph.experimental.do_not_convert
         y_hat = self.__classifier(x=x, a=a, name='clf', verbose=verbose)
         y_hat = tf.add(y_hat, 0, name="y_hat") # speeds up training trick
 

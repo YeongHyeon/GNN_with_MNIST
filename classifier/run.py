@@ -37,18 +37,7 @@ def main():
     best_dict['nn'] = FLAGS.nn
     best_dict['ksize'] = FLAGS.ksize
     best_dict['lr'] = FLAGS.lr
-    utils.save_json('performance_tmp.json', best_dict)
-
-    try: comp_dict = utils.read_json('performance.json')
-    except:
-        utils.save_json('performance.json', best_dict)
-        agent.load_params(model=best_dict['f1_name'])
-        agent.save_params(tflite=True)
-    else:
-        if(comp_dict['f1score'] < best_dict['f1score']):
-            utils.save_json('performance.json', best_dict)
-            agent.load_params(model=best_dict['f1_name'])
-            agent.save_params(tflite=True)
+    utils.save_json('performance.json', best_dict)
 
     print("Time (TR): %.5f [sec]" %(time_te - time_tr))
     te_time = time_fin - time_te
